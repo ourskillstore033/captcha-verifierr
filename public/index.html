@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Captcha Verifier</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div class="container">
+  <h2>Captcha Verifier</h2>
+
+  <select id="captchaType" onchange="loadCaptcha()">
+    <option value="text">Text Captcha</option>
+    <option value="math">Math Captcha</option>
+  </select>
+
+  <canvas id="captchaCanvas" width="220" height="70"></canvas>
+  <div id="mathBox"></div>
+
+  <input type="text" id="userInput" placeholder="Enter captcha">
+
+  <button onclick="verifyCaptcha()">Verify</button>
+</div>
+
+<div id="popup" class="popup">Captcha Verified ✅</div>
+
+<script src="script.js"></script>
+
+</body>
+</html>
