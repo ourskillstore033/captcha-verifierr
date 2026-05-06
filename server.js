@@ -68,7 +68,7 @@ app.post("/verify-all", async (req, res) => {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
-      secret: "YOUR_NEW_SECRET_KEY", // 🔴 replace here
+      secret: "0x4AAAAAADKQ2yviWotw7IJmiDyLdp7B_6E", // 🔴 replace here
       response: token
     })
   });
