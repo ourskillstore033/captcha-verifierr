@@ -1,4 +1,4 @@
-// 👉 PUT your backend URL here (Render)
+// 👉 PUT your backend URL (Render)
 const API_URL = "https://captcha-verifierr.onrender.com";
 
 let currentId = "";
@@ -9,22 +9,32 @@ window.onload = () => {
   loadCaptcha();
 };
 
-// Load captcha
+// ==========================
+// LOAD CAPTCHA
+// ==========================
 async function loadCaptcha() {
   const typeSelect = document.getElementById("captchaType");
   currentType = typeSelect.value;
 
-  const input = document.getElementById("userInput");
-  input.value = "";
-
   const canvas = document.getElementById("captchaCanvas");
   const mathBox = document.getElementById("mathBox");
+  const imageBox = document.getElementById("imageBox");
+  const sliderBox = document.getElementById("sliderBox");
+  const puzzleBox = document.getElementById("puzzleBox");
+
+  document.getElementById("userInput").value = "";
+
+  // Hide all
+  canvas.style.display = "none";
+  mathBox.style.display = "none";
+  imageBox.style.display = "none";
+  sliderBox.style.display = "none";
+  puzzleBox.style.display = "none";
 
   try {
+    // TEXT
     if (currentType === "text") {
-      // Show canvas, hide math
       canvas.style.display = "block";
-      mathBox.style.display = "none";
 
       const res = await fetch(API_URL + "/captcha/text");
       const data = await res.json();
@@ -33,64 +43,8 @@ async function loadCaptcha() {
       drawCaptcha(data.text);
     }
 
-    if (currentType === "image") {
-  const selected = [...document.querySelectorAll("#imageGrid img")]
-    .map((img, i) => img.classList.contains("selected") ? i : null)
-    .filter(v => v !== null);
-
-  const res = await fetch(API_URL + "/verify", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      id: currentId,
-      answer: selected
-    })
-  });
-
-  const data = await res.json();
-
-  if (data.success) showSuccess();
-  else showError("Wrong selection ❌");
-
-  return;
-}
-
-    if (Array.isArray(captcha.answer)) {
-  const isValid = JSON.stringify(captcha.answer.sort()) === JSON.stringify(answer.sort());
-  delete captchas[id];
-  return res.json({ success: isValid });
-}
-
-
-    if (currentType === "image") {
-  document.getElementById("imageBox").style.display = "block";
-
-  const res = await fetch(API_URL + "/captcha/image");
-  const data = await res.json();
-
-  currentId = data.id;
-  document.getElementById("imageQuestion").innerText = data.question;
-
-  const grid = document.getElementById("imageGrid");
-  grid.innerHTML = "";
-
-  data.images.forEach((img, index) => {
-    const el = document.createElement("img");
-    el.src = img.url;
-    el.style.width = "100%";
-    el.style.cursor = "pointer";
-
-    el.onclick = () => {
-      el.classList.toggle("selected");
-      el.style.border = el.classList.contains("selected") ? "3px solid green" : "none";
-    };
-
-    grid.appendChild(el);
-  });
-}
+    // MATH
     if (currentType === "math") {
-      // Show math, hide canvas
-      canvas.style.display = "none";
       mathBox.style.display = "block";
 
       const res = await fetch(API_URL + "/captcha/math");
@@ -99,32 +53,69 @@ async function loadCaptcha() {
       currentId = data.id;
       mathBox.innerText = data.question;
     }
-  } catch (err) {
-    showError("Server error. Try again.");
+
+    // IMAGE
+    if (currentType === "image") {
+      imageBox.style.display = "block";
+
+      const res = await fetch(API_URL + "/captcha/image");
+      const data = await res.json();
+
+      currentId = data.id;
+      document.getElementById("imageQuestion").innerText = data.question;
+
+      const grid = document.getElementById("imageGrid");
+      grid.innerHTML = "";
+
+      data.images.forEach((img, index) => {
+        const el = document.createElement("img");
+        el.src = img.url;
+
+        el.onclick = () => {
+          el.classList.toggle("selected");
+        };
+
+        grid.appendChild(el);
+      });
+    }
+
+    // SLIDER
+    if (currentType === "slider") {
+      sliderBox.style.display = "block";
+      initSlider();
+    }
+
+    // PUZZLE
+    if (currentType === "puzzle") {
+      puzzleBox.style.display = "block";
+      initPuzzle();
+    }
+
+  } catch {
+    showError("Server error");
   }
 }
 
-// 🔥 Distorted captcha drawing
+// ==========================
+// DISTORTED CAPTCHA
+// ==========================
 function drawCaptcha(text) {
   const canvas = document.getElementById("captchaCanvas");
   const ctx = canvas.getContext("2d");
 
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  // Background
-  ctx.fillStyle = "#f2f2f2";
+  ctx.fillStyle = "#f3f4f6";
   ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  // Noise lines
   for (let i = 0; i < 8; i++) {
     ctx.beginPath();
     ctx.moveTo(Math.random() * 220, Math.random() * 70);
     ctx.lineTo(Math.random() * 220, Math.random() * 70);
-    ctx.strokeStyle = "#aaa";
+    ctx.strokeStyle = "#ccc";
     ctx.stroke();
   }
 
-  // Distorted text
   for (let i = 0; i < text.length; i++) {
     const x = 20 + i * 35;
     const y = 40 + Math.random() * 10;
@@ -133,79 +124,177 @@ function drawCaptcha(text) {
     ctx.save();
     ctx.translate(x, y);
     ctx.rotate(angle);
-
     ctx.font = "bold 30px Arial";
-    ctx.fillStyle = "#333";
+    ctx.fillStyle = "#111";
     ctx.fillText(text[i], 0, 0);
-
     ctx.restore();
   }
 
-  // Noise dots
   for (let i = 0; i < 30; i++) {
-    ctx.fillRect(
-      Math.random() * 220,
-      Math.random() * 70,
-      2,
-      2
-    );
+    ctx.fillRect(Math.random() * 220, Math.random() * 70, 2, 2);
   }
 }
 
-// Verify captcha
+// ==========================
+// IMAGE VERIFY
+// ==========================
+function getSelectedImages() {
+  return [...document.querySelectorAll("#imageGrid img")]
+    .map((img, i) => img.classList.contains("selected") ? i : null)
+    .filter(v => v !== null);
+}
+
+// ==========================
+// SLIDER CAPTCHA
+// ==========================
+function initSlider() {
+  const btn = document.getElementById("sliderBtn");
+  const track = document.getElementById("sliderTrack");
+  const box = document.getElementById("sliderBox");
+
+  btn.style.left = "0px";
+  track.style.width = "0px";
+
+  let dragging = false;
+
+  btn.onmousedown = () => dragging = true;
+
+  document.onmouseup = () => {
+    if (!dragging) return;
+
+    if (btn.offsetLeft > 250) {
+      showSuccess();
+    } else {
+      resetSlider(btn, track);
+    }
+
+    dragging = false;
+  };
+
+  document.onmousemove = (e) => {
+    if (!dragging) return;
+
+    let x = e.clientX - box.getBoundingClientRect().left;
+
+    if (x < 0) x = 0;
+    if (x > 300) x = 300;
+
+    btn.style.left = x + "px";
+    track.style.width = x + "px";
+  };
+}
+
+// ==========================
+// PUZZLE CAPTCHA
+// ==========================
+function initPuzzle() {
+  const btn = document.getElementById("puzzleBtn");
+  const track = document.getElementById("puzzleTrack");
+  const box = document.getElementById("puzzleBox");
+
+  btn.style.left = "0px";
+  track.style.width = "0px";
+
+  let dragging = false;
+
+  btn.onmousedown = () => dragging = true;
+
+  document.onmouseup = () => {
+    if (!dragging) return;
+
+    if (btn.offsetLeft > 240) {
+      showSuccess();
+    } else {
+      resetSlider(btn, track);
+    }
+
+    dragging = false;
+  };
+
+  document.onmousemove = (e) => {
+    if (!dragging) return;
+
+    let x = e.clientX - box.getBoundingClientRect().left;
+
+    if (x < 0) x = 0;
+    if (x > 300) x = 300;
+
+    btn.style.left = x + "px";
+    track.style.width = x + "px";
+  };
+}
+
+function resetSlider(btn, track) {
+  btn.style.left = "0px";
+  track.style.width = "0px";
+}
+
+// ==========================
+// VERIFY
+// ==========================
 async function verifyCaptcha() {
+
+  // IMAGE CAPTCHA
+  if (currentType === "image") {
+    const selected = getSelectedImages();
+
+    const res = await fetch(API_URL + "/verify", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ id: currentId, answer: selected })
+    });
+
+    const data = await res.json();
+    data.success ? showSuccess() : showError("Wrong selection ❌");
+    return;
+  }
+
+  // SLIDER / PUZZLE handled via drag
+  if (currentType === "slider" || currentType === "puzzle") {
+    showError("Use slider to verify");
+    return;
+  }
+
   const answer = document.getElementById("userInput").value.trim();
 
   if (!answer) {
-    showError("Please enter captcha");
+    showError("Enter captcha");
     return;
   }
 
   try {
     const res = await fetch(API_URL + "/verify", {
       method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        id: currentId,
-        answer: answer
-      })
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({ id: currentId, answer })
     });
 
     const data = await res.json();
 
-    if (data.success) {
-      showSuccess();
-    } else {
-      showError("Wrong captcha ❌");
-      loadCaptcha();
-    }
-  } catch (err) {
-    showError("Server not responding");
+    data.success ? showSuccess() : (showError("Wrong captcha ❌"), loadCaptcha());
+
+  } catch {
+    showError("Server error");
   }
 }
 
-// Success popup
+// ==========================
+// POPUPS
+// ==========================
 function showSuccess() {
   const popup = document.getElementById("popup");
-  popup.innerText = "Captcha verified and usable ✅";
-  popup.style.background = "#28a745";
+  popup.innerText = "Captcha verified ✅";
+  popup.style.background = "#16a34a";
   popup.style.display = "block";
 
-  setTimeout(() => {
-    popup.style.display = "none";
-  }, 3000);
+  setTimeout(() => popup.style.display = "none", 2500);
 }
 
-// Error popup
 function showError(msg) {
   const popup = document.getElementById("popup");
   popup.innerText = msg;
-  popup.style.background = "#dc3545";
+  popup.style.background = "#dc2626";
   popup.style.display = "block";
 
-  setTimeout(() => {
-    popup.style.display = "none";
-  }, 2000);
+  setTimeout(() => popup.style.display = "none", 2000);
 }
