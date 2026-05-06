@@ -3,54 +3,44 @@ const cors = require("cors");
 const path = require("path");
 
 const app = express();
-
-// Middleware
 app.use(cors());
 app.use(express.json());
-
-// Serve static files (only used if hosting frontend on same server)
 app.use(express.static("public"));
 
-// In-memory captcha store
-const captchas = {};
+// 🔴 install: npm install node-fetch
+const fetch = (...args) => import('node-fetch').then(({default: fetch}) => fetch(...args));
 
-// Generate unique ID
-function generateId() {
+const captchas = {};
+function genId() {
   return Math.random().toString(36).substring(2, 10);
 }
 
-// Cleanup old captchas (optional basic security)
-setInterval(() => {
-  const now = Date.now();
-  for (let id in captchas) {
-    if (now - captchas[id].createdAt > 2 * 60 * 1000) {
-      delete captchas[id]; // expire after 2 minutes
-    }
-  }
-}, 60000);
-
-// =======================
-// TEXT CAPTCHA
-// =======================
+// ================= TEXT CAPTCHA =================
 app.get("/captcha/text", (req, res) => {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let text = "";
-
   for (let i = 0; i < 5; i++) {
     text += chars[Math.floor(Math.random() * chars.length)];
   }
 
-  const id = generateId();
-
-  captchas[id] = {
-    type: "text",
-    answer: text,
-    createdAt: Date.now()
-  };
+  const id = genId();
+  captchas[id] = { answer: text.toUpperCase() };
 
   res.json({ id, text });
 });
 
+// ================= MATH CAPTCHA =================
+app.get("/captcha/math", (req, res) => {
+  const a = Math.floor(Math.random() * 10);
+  const b = Math.floor(Math.random() * 10);
+
+  const id = genId();
+  captchas[id] = { answer: (a + b).toString() };
+
+  res.json({ id, question: `${a} + ${b}` });
+});
+
+// ================= IMAGE CAPTCHA =================
 app.get("/captcha/image", (req, res) => {
   const images = [
     { url: "https://via.placeholder.com/100?text=Cat", correct: true },
@@ -61,82 +51,53 @@ app.get("/captcha/image", (req, res) => {
     { url: "https://via.placeholder.com/100?text=Tree", correct: false }
   ];
 
-  const id = generateId();
-
+  const id = genId();
   captchas[id] = {
-    type: "image",
-    answer: images.map((img, i) => img.correct ? i : null).filter(v => v !== null),
-    createdAt: Date.now()
+    answer: images.map((img, i) => img.correct ? i : null).filter(v => v !== null)
   };
 
-  res.json({
-    id,
-    question: "Select all CAT images",
-    images
-  });
-});
-// =======================
-// MATH CAPTCHA
-// =======================
-app.get("/captcha/math", (req, res) => {
-  const a = Math.floor(Math.random() * 10);
-  const b = Math.floor(Math.random() * 10);
-
-  const id = generateId();
-
-  captchas[id] = {
-    type: "math",
-    answer: (a + b).toString(),
-    createdAt: Date.now()
-  };
-
-  res.json({
-    id,
-    question: `${a} + ${b}`
-  });
+  res.json({ id, question: "Select all CAT images", images });
 });
 
-// =======================
-// VERIFY CAPTCHA
-// =======================
-app.post("/verify", (req, res) => {
-  const { id, answer } = req.body;
+// ================= VERIFY (WITH TURNSTILE) =================
+app.post("/verify-all", async (req, res) => {
+  const { id, answer, token } = req.body;
 
-  if (!id || !answer) {
-    return res.json({ success: false, message: "Missing data" });
+  // 1️⃣ Verify Turnstile
+  const cfRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      secret: "YOUR_NEW_SECRET_KEY", // 🔴 replace here
+      response: token
+    })
+  });
+
+  const cfData = await cfRes.json();
+
+  if (!cfData.success) {
+    return res.json({ success: false, message: "Turnstile failed" });
   }
 
+  // 2️⃣ Verify your captcha
   const captcha = captchas[id];
+  if (!captcha) return res.json({ success: false });
 
-  if (!captcha) {
-    return res.json({ success: false, message: "Captcha expired or invalid" });
-  }
+  let valid = false;
 
-  const isValid =
-    captcha.answer.toUpperCase() === answer.toString().toUpperCase();
-
-  // Delete after one use
-  delete captchas[id];
-
-  if (isValid) {
-    return res.json({ success: true });
+  if (Array.isArray(captcha.answer)) {
+    valid = JSON.stringify(captcha.answer.sort()) === JSON.stringify(answer.sort());
   } else {
-    return res.json({ success: false });
+    valid = captcha.answer === answer.toString().toUpperCase();
   }
+
+  delete captchas[id];
+  res.json({ success: valid });
 });
 
-// =======================
-// ROOT ROUTE (Fix "Cannot GET /")
-// =======================
+// ROOT FIX
 app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
+  res.sendFile(path.join(__dirname, "public/index.html"));
 });
 
-// =======================
-// START SERVER
-// =======================
-const PORT = process.env.PORT || 3000;
-
-app.listen(PORT, () => {
-  console.log("Server running on port " + PORT);
-});
+app.listen(process.env.PORT || 3000, () => console.log("Server running"));
