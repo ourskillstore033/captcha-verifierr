@@ -1,3 +1,4 @@
+const API_URL = "https://captcha-verifierr.onrender.com";
 const express = require("express");
 const cors = require("cors");
 
