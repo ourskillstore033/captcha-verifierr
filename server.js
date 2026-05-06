@@ -51,6 +51,30 @@ app.get("/captcha/text", (req, res) => {
   res.json({ id, text });
 });
 
+app.get("/captcha/image", (req, res) => {
+  const images = [
+    { url: "https://via.placeholder.com/100?text=Cat", correct: true },
+    { url: "https://via.placeholder.com/100?text=Dog", correct: false },
+    { url: "https://via.placeholder.com/100?text=Cat", correct: true },
+    { url: "https://via.placeholder.com/100?text=Car", correct: false },
+    { url: "https://via.placeholder.com/100?text=Cat", correct: true },
+    { url: "https://via.placeholder.com/100?text=Tree", correct: false }
+  ];
+
+  const id = generateId();
+
+  captchas[id] = {
+    type: "image",
+    answer: images.map((img, i) => img.correct ? i : null).filter(v => v !== null),
+    createdAt: Date.now()
+  };
+
+  res.json({
+    id,
+    question: "Select all CAT images",
+    images
+  });
+});
 // =======================
 // MATH CAPTCHA
 // =======================
