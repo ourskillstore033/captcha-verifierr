@@ -33,6 +33,34 @@ async function loadCaptcha() {
       drawCaptcha(data.text);
     }
 
+    if (currentType === "image") {
+  const selected = [...document.querySelectorAll("#imageGrid img")]
+    .map((img, i) => img.classList.contains("selected") ? i : null)
+    .filter(v => v !== null);
+
+  const res = await fetch(API_URL + "/verify", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      id: currentId,
+      answer: selected
+    })
+  });
+
+  const data = await res.json();
+
+  if (data.success) showSuccess();
+  else showError("Wrong selection ❌");
+
+  return;
+}
+
+    if (Array.isArray(captcha.answer)) {
+  const isValid = JSON.stringify(captcha.answer.sort()) === JSON.stringify(answer.sort());
+  delete captchas[id];
+  return res.json({ success: isValid });
+}
+
 
     if (currentType === "image") {
   document.getElementById("imageBox").style.display = "block";
