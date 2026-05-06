@@ -1,29 +1,73 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
+  <meta charset="UTF-8">
   <title>Captcha Verifier</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <link rel="stylesheet" href="style.css">
+
+  <style>
+    /* Extra UI polish */
+    .title {
+      font-size: 22px;
+      font-weight: bold;
+      margin-bottom: 5px;
+    }
+
+    .subtitle {
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 20px;
+    }
+
+    .refresh-btn {
+      margin-top: 10px;
+      background: #eee;
+      color: #333;
+    }
+
+    .refresh-btn:hover {
+      background: #ddd;
+    }
+  </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>Captcha Verifier</h2>
 
+  <div class="title">🔐 Captcha Verifier</div>
+  <div class="subtitle">Complete the captcha to verify</div>
+
+  <!-- Captcha Type -->
   <select id="captchaType" onchange="loadCaptcha()">
     <option value="text">Text Captcha</option>
     <option value="math">Math Captcha</option>
   </select>
 
+  <!-- Canvas for text captcha -->
   <canvas id="captchaCanvas" width="220" height="70"></canvas>
+
+  <!-- Math question -->
   <div id="mathBox"></div>
 
-  <input type="text" id="userInput" placeholder="Enter captcha">
+  <!-- Input -->
+  <input 
+    type="text" 
+    id="userInput" 
+    placeholder="Enter captcha here"
+  >
 
+  <!-- Buttons -->
   <button onclick="verifyCaptcha()">Verify</button>
+  <button class="refresh-btn" onclick="loadCaptcha()">Refresh Captcha</button>
+
 </div>
 
-<div id="popup" class="popup">Captcha Verified ✅</div>
+<!-- Popup -->
+<div id="popup" class="popup"></div>
 
+<!-- Script -->
 <script src="script.js"></script>
 
 </body>
