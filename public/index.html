@@ -1,142 +1,150 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Captcha Verifier</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta charset="UTF-8">
+<title>Captcha Verifier Pro</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <link rel="stylesheet" href="style.css">
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: linear-gradient(135deg, #141e30, #243b55);
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
-  <style>
-    body {
-      margin: 0;
-      font-family: 'Segoe UI', sans-serif;
-      background: linear-gradient(135deg, #4facfe, #00f2fe);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-    }
+.container {
+  backdrop-filter: blur(15px);
+  background: rgba(255,255,255,0.1);
+  padding: 30px;
+  border-radius: 20px;
+  width: 380px;
+  text-align: center;
+  color: white;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.4);
+}
 
-    .container {
-      background: #fff;
-      padding: 30px;
-      border-radius: 16px;
-      width: 360px;
-      text-align: center;
-      box-shadow: 0 15px 40px rgba(0,0,0,0.25);
-    }
+h2 {
+  margin-bottom: 5px;
+}
 
-    h2 {
-      margin-bottom: 5px;
-    }
+.subtitle {
+  font-size: 13px;
+  color: #ccc;
+  margin-bottom: 20px;
+}
 
-    p {
-      font-size: 13px;
-      color: #666;
-      margin-bottom: 20px;
-    }
+select, input {
+  width: 100%;
+  padding: 10px;
+  margin-top: 12px;
+  border-radius: 10px;
+  border: none;
+  outline: none;
+}
 
-    select, input {
-      width: 100%;
-      padding: 10px;
-      margin-top: 12px;
-      border-radius: 8px;
-      border: 1px solid #ccc;
-      font-size: 15px;
-    }
+button {
+  margin-top: 15px;
+  padding: 12px;
+  width: 100%;
+  border-radius: 10px;
+  border: none;
+  background: #00c6ff;
+  color: white;
+  cursor: pointer;
+}
 
-    button {
-      margin-top: 15px;
-      padding: 12px;
-      width: 100%;
-      border: none;
-      border-radius: 8px;
-      background: #4facfe;
-      color: white;
-      font-size: 16px;
-      cursor: pointer;
-    }
+button:hover {
+  background: #0072ff;
+}
 
-    button:hover {
-      background: #00c6ff;
-    }
+/* Slider captcha */
+.slider-container {
+  margin-top: 20px;
+  background: #eee;
+  border-radius: 30px;
+  position: relative;
+  height: 50px;
+  display: none;
+}
 
-    .refresh-btn {
-      background: #eee;
-      color: #333;
-    }
+.slider-track {
+  height: 100%;
+  width: 0%;
+  background: #4caf50;
+  border-radius: 30px;
+}
 
-    .refresh-btn:hover {
-      background: #ddd;
-    }
+.slider-button {
+  position: absolute;
+  height: 50px;
+  width: 50px;
+  background: #fff;
+  border-radius: 50%;
+  top: 0;
+  left: 0;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-weight: bold;
+}
 
-    canvas {
-      margin-top: 15px;
-      border-radius: 8px;
-      border: 1px solid #ddd;
-    }
+canvas {
+  margin-top: 15px;
+  border-radius: 10px;
+}
 
-    #mathBox {
-      margin-top: 15px;
-      font-size: 22px;
-      font-weight: bold;
-      display: none;
-    }
+#mathBox {
+  font-size: 22px;
+  margin-top: 10px;
+}
 
-    .popup {
-      position: fixed;
-      top: 20px;
-      right: 20px;
-      color: white;
-      padding: 15px 20px;
-      border-radius: 10px;
-      display: none;
-      animation: fadeIn 0.3s ease;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(-10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-  </style>
+.popup {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  padding: 15px;
+  border-radius: 10px;
+  display: none;
+}
+</style>
 </head>
+
 <body>
 
 <div class="container">
 
-  <h2>🔐 Captcha Verifier</h2>
-  <p>Complete the captcha to verify</p>
+<h2>🔐 Captcha Verifier Pro</h2>
+<div class="subtitle">Inspired by modern security systems</div>
 
-  <!-- Captcha type -->
-  <select id="captchaType" onchange="loadCaptcha()">
-    <option value="text">Text Captcha</option>
-    <option value="math">Math Captcha</option>
-  </select>
+<select id="captchaType" onchange="loadCaptcha()">
+  <option value="text">Text Captcha</option>
+  <option value="math">Math Captcha</option>
+  <option value="slider">Slider Captcha</option>
+</select>
 
-  <!-- Text captcha -->
-  <canvas id="captchaCanvas" width="220" height="70"></canvas>
+<canvas id="captchaCanvas" width="220" height="70"></canvas>
+<div id="mathBox"></div>
 
-  <!-- Math captcha -->
-  <div id="mathBox"></div>
+<!-- Slider -->
+<div class="slider-container" id="sliderBox">
+  <div class="slider-track" id="sliderTrack"></div>
+  <div class="slider-button" id="sliderBtn">→</div>
+</div>
 
-  <!-- Input -->
-  <input 
-    type="text" 
-    id="userInput" 
-    placeholder="Enter captcha here"
-  >
+<input id="userInput" placeholder="Enter captcha">
 
-  <!-- Buttons -->
-  <button onclick="verifyCaptcha()">Verify</button>
-  <button class="refresh-btn" onclick="loadCaptcha()">Refresh Captcha</button>
+<button onclick="verifyCaptcha()">Verify</button>
+<button onclick="loadCaptcha()">Refresh</button>
 
 </div>
 
-<!-- Popup -->
 <div id="popup" class="popup"></div>
 
-<!-- Script -->
 <script src="script.js"></script>
 
 </body>
