@@ -33,6 +33,33 @@ async function loadCaptcha() {
       drawCaptcha(data.text);
     }
 
+
+    if (currentType === "image") {
+  document.getElementById("imageBox").style.display = "block";
+
+  const res = await fetch(API_URL + "/captcha/image");
+  const data = await res.json();
+
+  currentId = data.id;
+  document.getElementById("imageQuestion").innerText = data.question;
+
+  const grid = document.getElementById("imageGrid");
+  grid.innerHTML = "";
+
+  data.images.forEach((img, index) => {
+    const el = document.createElement("img");
+    el.src = img.url;
+    el.style.width = "100%";
+    el.style.cursor = "pointer";
+
+    el.onclick = () => {
+      el.classList.toggle("selected");
+      el.style.border = el.classList.contains("selected") ? "3px solid green" : "none";
+    };
+
+    grid.appendChild(el);
+  });
+}
     if (currentType === "math") {
       // Show math, hide canvas
       canvas.style.display = "none";
