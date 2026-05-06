@@ -1,21 +1,37 @@
-const API_URL = "https://captcha-verifierr.onrender.com";
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
 
 const app = express();
 
+// Middleware
 app.use(cors());
 app.use(express.json());
+
+// Serve static files (only used if hosting frontend on same server)
 app.use(express.static("public"));
 
-const captchas = {}; // store per user (simple version)
+// In-memory captcha store
+const captchas = {};
 
-// Generate random ID
+// Generate unique ID
 function generateId() {
   return Math.random().toString(36).substring(2, 10);
 }
 
+// Cleanup old captchas (optional basic security)
+setInterval(() => {
+  const now = Date.now();
+  for (let id in captchas) {
+    if (now - captchas[id].createdAt > 2 * 60 * 1000) {
+      delete captchas[id]; // expire after 2 minutes
+    }
+  }
+}, 60000);
+
+// =======================
 // TEXT CAPTCHA
+// =======================
 app.get("/captcha/text", (req, res) => {
   const chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
   let text = "";
@@ -25,48 +41,78 @@ app.get("/captcha/text", (req, res) => {
   }
 
   const id = generateId();
-  captchas[id] = { type: "text", answer: text };
+
+  captchas[id] = {
+    type: "text",
+    answer: text,
+    createdAt: Date.now()
+  };
 
   res.json({ id, text });
 });
 
+// =======================
 // MATH CAPTCHA
+// =======================
 app.get("/captcha/math", (req, res) => {
   const a = Math.floor(Math.random() * 10);
   const b = Math.floor(Math.random() * 10);
 
   const id = generateId();
-  captchas[id] = { type: "math", answer: a + b };
 
-  res.json({ id, question: `${a} + ${b}` });
+  captchas[id] = {
+    type: "math",
+    answer: (a + b).toString(),
+    createdAt: Date.now()
+  };
+
+  res.json({
+    id,
+    question: `${a} + ${b}`
+  });
 });
 
-// VERIFY
+// =======================
+// VERIFY CAPTCHA
+// =======================
 app.post("/verify", (req, res) => {
   const { id, answer } = req.body;
 
-  if (!captchas[id]) {
-    return res.json({ success: false });
+  if (!id || !answer) {
+    return res.json({ success: false, message: "Missing data" });
   }
 
-  const valid =
-    captchas[id].answer.toString().toUpperCase() ===
-    answer.toString().toUpperCase();
+  const captcha = captchas[id];
 
-  delete captchas[id]; // one-time use
+  if (!captcha) {
+    return res.json({ success: false, message: "Captcha expired or invalid" });
+  }
 
-  res.json({ success: valid });
+  const isValid =
+    captcha.answer.toUpperCase() === answer.toString().toUpperCase();
+
+  // Delete after one use
+  delete captchas[id];
+
+  if (isValid) {
+    return res.json({ success: true });
+  } else {
+    return res.json({ success: false });
+  }
 });
 
+// =======================
+// ROOT ROUTE (Fix "Cannot GET /")
+// =======================
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
+});
+
+// =======================
+// START SERVER
+// =======================
 const PORT = process.env.PORT || 3000;
 
 app.listen(PORT, () => {
   console.log("Server running on port " + PORT);
-});
-
-
-const path = require("path");
-
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
