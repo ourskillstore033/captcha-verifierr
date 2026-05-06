@@ -1,3 +1,4 @@
+const API_URL = "https://captcha-verifierr.onrender.com";
 const API_URL = ""; // keep empty for local, add backend URL after deploy
 
 let currentId = "";
